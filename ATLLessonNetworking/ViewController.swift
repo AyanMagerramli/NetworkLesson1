@@ -10,52 +10,33 @@ import UIKit
 class ViewController: UIViewController {
     
     @IBOutlet weak var tableView: UITableView!
-    
-    var items = [Post]()
-    let baseURL = "https://jsonplaceholder.typicode.com"
+    let viewModel = HomeViewModel(networkManager: NetworkManager.shared)
+   
 
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
-        getPostItems()
+        viewModel.getPosts {
+            DispatchQueue.main.async {[weak self] in
+                self?.tableView.reloadData()
+            }
+        }
     }
     
     func configureUI() {
         tableView.delegate = self
         tableView.dataSource = self
     }
-    
-    func getPostItems () {
-        guard let url = URL(string: "\(baseURL)/posts") else { return }
-        let request = URLRequest(url: url)
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print(error.localizedDescription)
-            } else {
-                do {
-                    self.items = try JSONDecoder().decode([Post].self, from: data!)
-                    print(self.items)
-                    
-                    DispatchQueue.main.async {
-                        self.tableView.reloadData()
-                    }
-                } catch {
-                    print(error.localizedDescription)
-                }
-            }
-        }.resume()
-    }
 }
-
 
 extension ViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        items.count
+        viewModel.items?.count ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
-        cell.textLabel?.text = items[indexPath.row].title
+        cell.textLabel?.text = viewModel.items?[indexPath.row].title
         return cell
     }
 }
